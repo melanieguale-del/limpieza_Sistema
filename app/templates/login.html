@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h2>Iniciar sesión</h2>
+  <form method="POST" action="{{ url_for('auth.login') }}">
+    {{ form.hidden_tag() }}
+    <div class="field">
+      {{ form.username.label }}
+      {{ form.username(class="input", placeholder="Tu usuario") }}
+      {% for e in form.username.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.password.label }}
+      {{ form.password(class="input", placeholder="Tu contraseña") }}
+      {% for e in form.password.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    {{ form.submit(class="btn btn-block") }}
+  </form>
+  <p class="muted">¿No tienes cuenta? <a href="{{ url_for('auth.register') }}">Regístrate</a></p>
+</div>
+{% endblock %}

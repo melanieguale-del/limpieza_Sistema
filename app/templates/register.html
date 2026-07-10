@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Registro{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h2>Crear cuenta</h2>
+  <form method="POST" action="{{ url_for('auth.register') }}">
+    {{ form.hidden_tag() }}
+    <div class="field">
+      {{ form.username.label }} {{ form.username(class="input") }}
+      {% for e in form.username.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.email.label }} {{ form.email(class="input") }}
+      {% for e in form.email.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.password.label }} {{ form.password(class="input") }}
+      {% for e in form.password.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.confirm.label }} {{ form.confirm(class="input") }}
+      {% for e in form.confirm.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    {{ form.submit(class="btn btn-block") }}
+  </form>
+  <p class="muted">¿Ya tienes cuenta? <a href="{{ url_for('auth.login') }}">Inicia sesión</a></p>
+</div>
+{% endblock %}

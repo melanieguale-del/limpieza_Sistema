@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Mi perfil{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h2>Mi perfil</h2>
+  <p class="muted" style="margin-top:-1rem; margin-bottom:1.2rem;">
+    Usuario: <strong>{{ current_user.username }}</strong><br>
+    Correo: <strong>{{ current_user.email }}</strong>
+  </p>
+
+  <h2 style="font-size:1.1rem;">Cambiar contraseña</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="field">
+      {{ form.current_password.label }} {{ form.current_password(class="input") }}
+      {% for e in form.current_password.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.new_password.label }} {{ form.new_password(class="input") }}
+      {% for e in form.new_password.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.confirm.label }} {{ form.confirm(class="input") }}
+      {% for e in form.confirm.errors %}<small class="err">{{ e }}</small>{% endfor %}
+    </div>
+    {{ form.submit(class="btn btn-block") }}
+  </form>
+</div>
+{% endblock %}

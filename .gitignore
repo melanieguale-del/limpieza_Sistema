@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Base de datos local
+*.db
+*.sqlite3
+
+# Variables de entorno (¡nunca subir credenciales!)
+.env
+
+# Migraciones locales de prueba (se regeneran)
+instance/
+
+# IDE
+.vscode/
+.idea/
+
+# Tests
+.pytest_cache/
+.coverage

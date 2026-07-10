@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="dash-header">
+  <h2>Inventario de productos</h2>
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+    <a class="btn-outline" href="{{ url_for('main.historial_ventas') }}">📊 Ventas</a>
+    <a class="btn-outline" href="{{ url_for('main.exportar_csv') }}">⬇ Exportar CSV</a>
+    <a class="btn" href="{{ url_for('main.producto_nuevo') }}">+ Nuevo producto</a>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total de productos</div>
+    <div class="stat-value">{{ total_productos }}</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-label">Valor del inventario</div>
+    <div class="stat-value">${{ "%.2f"|format(valor_total) }}</div>
+  </div>
+  <div class="stat-card accent-alert">
+    <div class="stat-label">Stock bajo</div>
+    <div class="stat-value">{{ stock_bajo_count }}</div>
+  </div>
+</div>
+
+<form method="GET" class="search-bar">
+  <input class="input" type="text" name="q" value="{{ q }}"
+         placeholder="Buscar por nombre o categoría...">
+  <select class="input" name="categoria" style="max-width:220px;">
+    <option value="">Todas las categorías</option>
+    {% for valor, etiqueta in categorias %}
+      <option value="{{ valor }}" {% if categoria == valor %}selected{% endif %}>{{ etiqueta }}</option>
+    {% endfor %}
+  </select>
+  <select class="input" name="orden" style="max-width:200px;">
+    <option value="nombre" {% if orden == "nombre" %}selected{% endif %}>Nombre (A-Z)</option>
+    <option value="precio_asc" {% if orden == "precio_asc" %}selected{% endif %}>Precio (menor a mayor)</option>
+    <option value="precio_desc" {% if orden == "precio_desc" %}selected{% endif %}>Precio (mayor a menor)</option>
+    <option value="stock_asc" {% if orden == "stock_asc" %}selected{% endif %}>Stock (menor a mayor)</option>
+    <option value="stock_desc" {% if orden == "stock_desc" %}selected{% endif %}>Stock (mayor a menor)</option>
+  </select>
+  <button class="btn-outline" type="submit">Filtrar</button>
+</form>
+
+{% if productos %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Producto</th>
+        <th>Categoría</th>
+        <th>Precio</th>
+        <th>Stock</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in productos %}
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:0.7rem;">
+              {% if p.imagen_url %}
+                <img src="{{ p.imagen_url }}" alt="{{ p.nombre }}" class="thumb"
+                     onerror="this.replaceWith(Object.assign(document.createElement('div'), {className:'thumb thumb-fallback', textContent:'🧴'}))">
+              {% else %}
+                <div class="thumb thumb-fallback">🧴</div>
+              {% endif %}
+              <div>
+                <strong>{{ p.nombre }}</strong>
+                {% if p.marca %}<div class="muted-inline">{{ p.marca }}</div>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td><span class="badge">{{ p.categoria }}</span></td>
+          <td>${{ "%.2f"|format(p.precio) }}</td>
+          <td>
+            {{ p.stock }}
+            {% if p.stock_bajo %}<span class="badge badge-alert">stock bajo</span>{% endif %}
+          </td>
+          <td class="task-actions">
+            <form method="POST" action="{{ url_for('main.producto_vender', producto_id=p.id) }}" class="sell-form">
+              {{ venta_form.hidden_tag() }}
+              <input class="input input-sm" type="number" name="cantidad" min="1" max="{{ p.stock }}"
+                     placeholder="Cant." {% if p.stock == 0 %}disabled{% endif %} required>
+              <button class="btn-sm btn-sell" type="submit" {% if p.stock == 0 %}disabled{% endif %}>Vender</button>
+            </form>
+            <a class="btn-sm" href="{{ url_for('main.producto_editar', producto_id=p.id) }}">Editar</a>
+            <form method="POST" action="{{ url_for('main.producto_eliminar', producto_id=p.id) }}"
+                  onsubmit="return confirm('¿Eliminar este producto?');">
+              <button class="btn-sm btn-danger" type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if paginacion and paginacion.pages > 1 %}
+    <div class="pagination">
+      {% if paginacion.has_prev %}
+        <a class="btn-sm" href="{{ url_for('main.dashboard', q=q, categoria=categoria, orden=orden, page=paginacion.prev_num) }}">&larr; Anterior</a>
+      {% endif %}
+      <span class="muted-inline">Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+      {% if paginacion.has_next %}
+        <a class="btn-sm" href="{{ url_for('main.dashboard', q=q, categoria=categoria, orden=orden, page=paginacion.next_num) }}">Siguiente &rarr;</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% else %}
+  <p class="muted">
+    {% if q or categoria %}No se encontraron productos con esos filtros.
+    {% else %}Aún no tienes productos. ¡Agrega el primero!{% endif %}
+  </p>
+{% endif %}
+{% endblock %}

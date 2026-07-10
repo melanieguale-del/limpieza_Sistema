@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Historial de ventas{% endblock %}
+{% block content %}
+<div class="dash-header">
+  <h2>Historial de ventas</h2>
+  <a class="btn-outline" href="{{ url_for('main.dashboard') }}">&larr; Volver al inventario</a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Unidades vendidas</div>
+    <div class="stat-value">{{ unidades_vendidas }}</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-label">Total vendido</div>
+    <div class="stat-value">${{ "%.2f"|format(total_vendido) }}</div>
+  </div>
+</div>
+
+{% if ventas %}
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th>Precio unitario</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in ventas %}
+        <tr>
+          <td>{{ v.fecha.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td>{{ v.producto.nombre if v.producto else "Producto eliminado" }}</td>
+          <td>{{ v.cantidad }}</td>
+          <td>${{ "%.2f"|format(v.precio_unitario) }}</td>
+          <td><strong>${{ "%.2f"|format(v.total) }}</strong></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if paginacion and paginacion.pages > 1 %}
+    <div class="pagination">
+      {% if paginacion.has_prev %}
+        <a class="btn-sm" href="{{ url_for('main.historial_ventas', page=paginacion.prev_num) }}">&larr; Anterior</a>
+      {% endif %}
+      <span class="muted-inline">Página {{ paginacion.page }} de {{ paginacion.pages }}</span>
+      {% if paginacion.has_next %}
+        <a class="btn-sm" href="{{ url_for('main.historial_ventas', page=paginacion.next_num) }}">Siguiente &rarr;</a>
+      {% endif %}
+    </div>
+  {% endif %}
+{% else %}
+  <p class="muted">Aún no has registrado ninguna venta. Ve al inventario y usa el botón "Vender" en un producto.</p>
+{% endif %}
+{% endblock %}
