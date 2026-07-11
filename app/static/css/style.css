@@ -184,6 +184,18 @@ body {
 .thumb-fallback { display: flex; align-items: center; justify-content: center; background: #f0fdfa; font-size: 1.2rem; }
 .thumb-preview { max-width: 140px; max-height: 140px; border-radius: 10px; margin-top: 0.5rem; object-fit: cover; border: 1px solid var(--border); }
 
+/* ---------- Gráfico de ventas (7 días) ---------- */
+.chart-title { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--text); }
+.bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.6rem; height: 160px; }
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; height: 100%; }
+.bar-track { flex: 1; width: 100%; max-width: 32px; display: flex; align-items: flex-end; background: #f0fdfa; border-radius: 6px; overflow: hidden; }
+.bar-fill { width: 100%; background: linear-gradient(180deg, var(--accent), var(--primary)); border-radius: 6px 6px 0 0; min-height: 3px; transition: height .2s; }
+.bar-label { font-size: 0.75rem; color: var(--muted); font-weight: 600; text-transform: capitalize; }
+
+.top-product { display: flex; align-items: center; gap: 1rem; }
+.top-product-icon { font-size: 2.2rem; }
+.top-product-name { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+
 /* ---------- Paginación ---------- */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
 

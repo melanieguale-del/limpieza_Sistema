@@ -2,6 +2,7 @@
 exportación a CSV y perfil de usuario."""
 import csv
 import io
+from datetime import datetime, timedelta
 
 from flask import (
     Blueprint, render_template, redirect, url_for, flash, abort, request, Response
@@ -161,7 +162,9 @@ def producto_vender(producto_id):
 @main_bp.route("/ventas")
 @login_required
 def historial_ventas():
-    """Historial de ventas del usuario, más recientes primero."""
+    """Historial de ventas del usuario, más recientes primero, con un
+    resumen de hoy/semana/mes, un mini gráfico de los últimos 7 días y
+    el producto más vendido."""
     page = request.args.get("page", 1, type=int)
     consulta = Venta.query.filter_by(user_id=current_user.id).order_by(Venta.fecha.desc())
     paginacion = consulta.paginate(page=page, per_page=POR_PAGINA, error_out=False)
@@ -171,12 +174,58 @@ def historial_ventas():
     total_vendido = sum(v.total for v in todas)
     unidades_vendidas = sum(v.cantidad for v in todas)
 
+    ahora = datetime.now()
+    hoy = ahora.date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())  # lunes de esta semana
+    inicio_mes = hoy.replace(day=1)
+
+    def fecha_venta(v):
+        f = v.fecha
+        return f.date() if f else hoy
+
+    total_hoy = sum(v.total for v in todas if fecha_venta(v) == hoy)
+    total_semana = sum(v.total for v in todas if fecha_venta(v) >= inicio_semana)
+    total_mes = sum(v.total for v in todas if fecha_venta(v) >= inicio_mes)
+
+    # Ventas por día de los últimos 7 días (para el gráfico de barras).
+    dias_grafico = [hoy - timedelta(days=i) for i in range(6, -1, -1)]
+    ventas_por_dia = {d: 0.0 for d in dias_grafico}
+    for v in todas:
+        d = fecha_venta(v)
+        if d in ventas_por_dia:
+            ventas_por_dia[d] += v.total
+    max_dia = max(ventas_por_dia.values()) if ventas_por_dia else 0
+    grafico = [
+        {
+            "etiqueta": d.strftime("%a").capitalize(),
+            "total": monto,
+            "porcentaje": round((monto / max_dia) * 100) if max_dia > 0 else 0,
+        }
+        for d, monto in ventas_por_dia.items()
+    ]
+
+    # Producto más vendido (por unidades) de todo el historial.
+    top = (
+        db.session.query(Producto.nombre, db.func.sum(Venta.cantidad).label("unidades"))
+        .join(Venta, Venta.producto_id == Producto.id)
+        .filter(Venta.user_id == current_user.id)
+        .group_by(Producto.id)
+        .order_by(db.desc("unidades"))
+        .first()
+    )
+    producto_top = {"nombre": top[0], "unidades": top[1]} if top else None
+
     return render_template(
         "historial_ventas.html",
         ventas=ventas,
         paginacion=paginacion,
         total_vendido=total_vendido,
         unidades_vendidas=unidades_vendidas,
+        total_hoy=total_hoy,
+        total_semana=total_semana,
+        total_mes=total_mes,
+        grafico=grafico,
+        producto_top=producto_top,
     )
 
 

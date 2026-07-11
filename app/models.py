@@ -74,7 +74,7 @@ class Venta(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cantidad = db.Column(db.Integer, nullable=False)
     precio_unitario = db.Column(db.Float, nullable=False)
-    fecha = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    fecha = db.Column(db.DateTime, default=lambda: datetime.now())
 
     producto_id = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)

@@ -8,12 +8,54 @@
 
 <div class="stats-grid">
   <div class="stat-card">
-    <div class="stat-label">Unidades vendidas</div>
-    <div class="stat-value">{{ unidades_vendidas }}</div>
+    <div class="stat-label">Hoy</div>
+    <div class="stat-value">${{ "%.2f"|format(total_hoy) }}</div>
   </div>
   <div class="stat-card accent-blue">
-    <div class="stat-label">Total vendido</div>
-    <div class="stat-value">${{ "%.2f"|format(total_vendido) }}</div>
+    <div class="stat-label">Esta semana</div>
+    <div class="stat-value">${{ "%.2f"|format(total_semana) }}</div>
+  </div>
+  <div class="stat-card accent-blue">
+    <div class="stat-label">Este mes</div>
+    <div class="stat-value">${{ "%.2f"|format(total_mes) }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Unidades vendidas (total)</div>
+    <div class="stat-value">{{ unidades_vendidas }}</div>
+  </div>
+</div>
+
+<div class="row-2" style="align-items:stretch; margin-bottom:1.75rem;">
+  <div class="card">
+    <h3 class="chart-title">Ventas de los últimos 7 días</h3>
+    {% if grafico and grafico|selectattr("total", "gt", 0)|list %}
+      <div class="bar-chart">
+        {% for d in grafico %}
+          <div class="bar-col">
+            <div class="bar-track">
+              <div class="bar-fill" style="height: {{ d.porcentaje }}%;" title="${{ '%.2f'|format(d.total) }}"></div>
+            </div>
+            <span class="bar-label">{{ d.etiqueta }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Aún no hay ventas esta semana para graficar.</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h3 class="chart-title">Producto más vendido</h3>
+    {% if producto_top %}
+      <div class="top-product">
+        <div class="top-product-icon">🏆</div>
+        <div>
+          <div class="top-product-name">{{ producto_top.nombre }}</div>
+          <div class="muted-inline">{{ producto_top.unidades }} unidades vendidas en total</div>
+        </div>
+      </div>
+    {% else %}
+      <p class="muted">Registra tu primera venta para ver este dato.</p>
+    {% endif %}
   </div>
 </div>
 
