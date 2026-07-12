@@ -11,6 +11,27 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # Contenedor Docker adicional que corre DENTRO de esta misma VM del
+    # runner, en paralelo, solo mientras dura el job. Los tests se
+    # conectan a él por "localhost" gracias al mapeo de puertos.
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: usuario_test
+          POSTGRES_PASSWORD: clave_test
+          POSTGRES_DB: limpiastock_test
+        ports:
+          - 5432:5432
+        # Espera a que Postgres esté realmente listo para recibir
+        # conexiones antes de dejar avanzar al siguiente paso.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Descargar el código
         uses: actions/checkout@v4
@@ -26,4 +47,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Ejecutar tests
+        env:
+          TEST_DATABASE_URL: postgresql://usuario_test:clave_test@localhost:5432/limpiastock_test
         run: pytest -v

@@ -32,7 +32,18 @@ class Config:
 
 
 class TestConfig(Config):
-    """Configuración para los tests: base de datos en memoria, rápida y aislada."""
+    """Configuración para los tests.
+
+    En GitHub Actions (CI), la variable de entorno TEST_DATABASE_URL apunta
+    al contenedor de PostgreSQL levantado como 'service' en ci.yml, así los
+    tests corren contra una base de datos real, igual a la de producción.
+
+    En una PC local (donde no existe ese contenedor), no se define esa
+    variable, y se usa automáticamente SQLite en memoria: rápido y sin
+    necesitar nada instalado aparte.
+    """
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = _normalizar_url(
+        os.environ.get("TEST_DATABASE_URL") or "sqlite:///:memory:"
+    )
     WTF_CSRF_ENABLED = False
