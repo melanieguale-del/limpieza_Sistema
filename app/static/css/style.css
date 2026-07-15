@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #0d9488;
-  --primary-dark: #0f766e;
-  --accent: #2563eb;
-  --accent-dark: #1d4ed8;
+  --primary: #eb258f ;
+  --primary-dark: #cd08df;
+  --accent: #eb25ca;
+  --accent-dark: #d81daf;
   --success-bg: #dcfce7;
   --success-text: #166534;
   --danger: #dc2626;
