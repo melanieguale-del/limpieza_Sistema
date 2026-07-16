@@ -1,12 +1,27 @@
-name: CI - Tests
+name: CI/CD - Tests y Despliegue a Azure
 
-# Se ejecuta al abrir un Pull Request hacia main y en cada push a las ramas.
-# Así main queda protegida: no se puede mergear si los tests fallan.
+# - Pull Request hacia main, o push a cualquier rama: corre las pruebas.
+# - Push a main (ya fusionado) o disparo manual: corre las pruebas y,
+#   SOLO si pasan, compila y despliega la app a Azure App Service.
+#
+# El despliegue usa el patron de ranuras (deployment slots):
+#   1. El codigo nuevo se publica primero en la ranura "staging".
+#   2. Se verifica que staging responda correctamente.
+#   3. Solo si responde, se intercambia (swap) con produccion.
+# Si el codigo nuevo fallara, el swap no se ejecuta y produccion
+# permanece intacta con la version anterior.
 on:
   pull_request:
     branches: [ main ]
   push:
-    branches-ignore: [ main ]
+    branches: [ '**' ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: limpiastock-project
+  AZURE_RESOURCE_GROUP: rg-limpiastock
+  SLOT_NAME: staging
+  STAGING_URL: https://limpiastock-project-staging-badagaf6dygsf9dp.chilecentral-01.azurewebsites.net
 
 jobs:
   test:
@@ -14,18 +29,16 @@ jobs:
 
     # Contenedor Docker adicional que corre DENTRO de esta misma VM del
     # runner, en paralelo, solo mientras dura el job. Los tests se
-    # conectan a él por "localhost" gracias al mapeo de puertos.
+    # conectan a el por "localhost" gracias al mapeo de puertos.
     services:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: usuario_test
-          POSTGRES_PASSWORD: clave_test
-          POSTGRES_DB: limpiastock_test
+          POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
         ports:
           - 5432:5432
-        # Espera a que Postgres esté realmente listo para recibir
-        # conexiones antes de dejar avanzar al siguiente paso.
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -48,5 +61,96 @@ jobs:
 
       - name: Ejecutar tests
         env:
-          TEST_DATABASE_URL: postgresql://usuario_test:clave_test@localhost:5432/limpiastock_test
+          TEST_DATABASE_URL: postgresql://${{ secrets.TEST_DB_USER }}:${{ secrets.TEST_DB_PASSWORD }}@localhost:5432/${{ secrets.TEST_DB_NAME }}
         run: pytest -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create and Start virtual environment and Install dependencies
+        run: |
+          python -m venv antenv
+          source antenv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            .
+            !antenv/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1E08E1DFBE104329AD47C508670EA9E1 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E4675391DFBA4161B6C1732469E42816 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_577FA4E3061243B19217AFA12CBEE35B }}
+
+      # PASO 1: el codigo nuevo se publica en la ranura de pruebas,
+      # nunca directamente en produccion.
+      - name: 'Desplegar en la ranura de staging'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-staging
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: ${{ env.SLOT_NAME }}
+
+      # PASO 2: se comprueba que la aplicacion realmente arranco en
+      # staging. Se intenta durante 3 minutos; si nunca responde con
+      # exito, el job falla aqui y el swap NO se ejecuta.
+      - name: 'Verificar que staging responde'
+        run: |
+          echo "Comprobando ${{ env.STAGING_URL }}"
+          for intento in $(seq 1 18); do
+            codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 "${{ env.STAGING_URL }}" || echo "000")
+            echo "Intento $intento/18 -> HTTP $codigo"
+            if [ "$codigo" = "200" ]; then
+              echo "Staging responde correctamente. Se procede al intercambio."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "ERROR: staging no respondio HTTP 200 tras 3 minutos."
+          echo "El intercambio se cancela y produccion permanece intacta."
+          exit 1
+
+      # PASO 3: intercambio. Staging pasa a ser produccion y viceversa.
+      # Como la instancia de staging ya esta encendida y verificada, el
+      # cambio es practicamente instantaneo y sin tiempo de caida.
+      - name: 'Intercambiar staging con producción'
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az webapp deployment slot swap \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --name ${{ env.AZURE_WEBAPP_NAME }} \
+              --slot ${{ env.SLOT_NAME }} \
+              --target-slot production
