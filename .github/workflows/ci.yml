@@ -3,6 +3,7 @@ name: CI/CD - Tests y Despliegue a Azure
 # - Pull Request hacia main, o push a cualquier rama: corre las pruebas.
 # - Push a main (ya fusionado) o disparo manual: corre las pruebas y,
 #   SOLO si pasan, compila y despliega la app a Azure App Service.
+
 on:
   pull_request:
     branches: [ main ]
@@ -10,13 +11,14 @@ on:
     branches: [ '**' ]
   workflow_dispatch:
 
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     # Contenedor Docker adicional que corre DENTRO de esta misma VM del
     # runner, en paralelo, solo mientras dura el job. Los tests se
-    # conectan a él por "localhost" gracias al mapeo de puertos.
+    # conectan a el por "localhost" gracias al mapeo de puertos.
     services:
       postgres:
         image: postgres:14
