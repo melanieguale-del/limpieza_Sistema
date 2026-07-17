@@ -33,7 +33,7 @@ body {
 
 /* ---------- Navbar ---------- */
 .navbar {
-  background: linear-gradient(90deg, #0d9488 0%, #2563eb 100%);
+  background: linear-gradient(90deg, #94380d 0%, #eb2577 100%);
   padding: 1rem 1.75rem;
   display: flex;
   justify-content: space-between;
